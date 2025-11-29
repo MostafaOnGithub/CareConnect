@@ -1,6 +1,6 @@
 from django.db import models
-from..Devices.models import Device
-from ..Users.models import User
+from Devices.models import Device
+from Users.models import User
 
 
 class DeviceLocationLog(models.Model):

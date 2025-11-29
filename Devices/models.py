@@ -1,5 +1,5 @@
 from django.db import models
-from ..Users.models import User
+from Users.models import User
 
 class Device(models.Model):
     serial_number = models.CharField(max_length=100, unique=True)

@@ -1,6 +1,6 @@
 from django.db import models
-from ..Users.models import User
-from ..Devices.models import Device
+from Users.models import User
+from Devices.models import Device
 
 
 class Alarm(models.Model):

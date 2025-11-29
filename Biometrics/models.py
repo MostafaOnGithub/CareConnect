@@ -1,5 +1,5 @@
 from django.db import models
-from ..Devices.models import Device
+from Devices.models import Device
 
 class BiometricReading(models.Model):
     device = models.ForeignKey(Device, on_delete=models.CASCADE)
