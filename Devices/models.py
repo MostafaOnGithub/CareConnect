@@ -8,6 +8,10 @@ class Device(models.Model):
     def __str__(self):
         return self.serial_number
     
+class SosEvent(models.Model):
+    device = models.ForeignKey(Device,on_delete=models.CASCADE,related_name='sos_event')
+    time_stamp = models.DateTimeField(auto_now_add=True)
+    
 
 class UserDeviceLink(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
