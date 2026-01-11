@@ -8,6 +8,9 @@ from rest_framework.authtoken.models import Token
 from django.core.exceptions import ObjectDoesNotExist
 from Users.models import User
 from django.contrib.auth import authenticate
+from Tracking.serializers import RoutePointSerializer
+from Devices.models import Device,UserDeviceLink
+from Tracking.models import DeviceLocationLog
 
 @api_view(['POST'])
 def registerUser(request):
@@ -20,10 +23,10 @@ def registerUser(request):
 
 
 @api_view(['POST'])
-def userLogin(request):
+def userLogin(request):     
     if request.method == 'POST':
-        username = request.data.get(username)
-        password = request.data.get(password)
+        username = request.data.get("username")
+        password = request.data.get("password")
         user = None
         if "@" in username:
             try:
@@ -49,3 +52,30 @@ def userLogout(request):
             return Response({'message': 'Successfully logged out.'}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def deviceLiveLocation(request):
+    link = UserDeviceLink.objects.filter(
+        user = request.user,
+        is_active = True
+    ).select_related("device").first()
+
+    if not link:
+        return Response({"error":"There is no device connected"}, status=status.HTTP_404_NOT_FOUND)
+    
+    device = link.device
+    
+    location = DeviceLocationLog.objects.filter(
+        device = device
+    ).latest('timestamp')
+    if not location:
+        return Response({"error":"No location data available"},status=status.HTTP_404_NOT_FOUND)
+    
+    serializer = RoutePointSerializer(location)
+    return Response(serializer.data,status=status.HTTP_200_OK)
+
+
+        

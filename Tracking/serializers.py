@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import DeviceLocationLog,GeoFencing,DangerZone
+from Devices.models import Device
 
 class DeviceLocationLogSerializer(serializers.ModelSerializer):
     class Meta:
@@ -9,7 +10,7 @@ class DeviceLocationLogSerializer(serializers.ModelSerializer):
 class RoutePointSerializer(serializers.ModelSerializer):
     class Meta:
         model = DeviceLocationLog
-        fields = ['latitude', 'longitude', 'timestamp']
+        fields = ['device','latitude', 'longitude', 'timestamp']
 
 class GeoFencingSerializer(serializers.ModelSerializer):
     class Meta:
