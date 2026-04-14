@@ -14,8 +14,14 @@ class SosEventSerializer(serializers.ModelSerializer):
     
 
 class UserDeviceLinkSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField()
-    device = serializers.StringRelatedField()
+    # This ensures the API doesn't expect 'user' in the JSON body
+    device = serializers.SlugRelatedField(
+        slug_field='serial_number', 
+        queryset=Device.objects.all()
+    )
+
+    user_name = serializers.ReadOnlyField(source='user.username')
+
     class Meta:
         model = UserDeviceLink
-        fields = ["user","device","role"]
+        fields = ['id', 'user_name', 'device', 'is_active', 'role']

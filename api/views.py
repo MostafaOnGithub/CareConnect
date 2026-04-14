@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from rest_framework import status
+from rest_framework import status, viewsets,permissions
 from rest_framework.response import Response
 from rest_framework.decorators import api_view,permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -11,6 +11,8 @@ from django.contrib.auth import authenticate
 from Tracking.serializers import RoutePointSerializer
 from Devices.models import Device,UserDeviceLink
 from Tracking.models import DeviceLocationLog
+from Devices.serializers import UserDeviceLinkSerializer
+from rest_framework.authentication import TokenAuthentication
 
 @api_view(['POST'])
 def registerUser(request):
@@ -78,4 +80,34 @@ def deviceLiveLocation(request):
     return Response(serializer.data,status=status.HTTP_200_OK)
 
 
-        
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def SoSHistory(request):
+    link = UserDeviceLink.objects.filter(
+        user = request.user,
+        is_active = True
+    ).select_related("device").first()
+
+    if not link:
+        return Response({"error":"There is no device connected"}, status=status.HTTP_404_NOT_FOUND)
+    
+    device = link.device
+
+
+class UserDeviceLinkViewSet(viewsets.ModelViewSet):
+    serializer_class = UserDeviceLinkSerializer
+
+    authentication_classes = [TokenAuthentication] 
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # A user should only see their own device links
+        return UserDeviceLink.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        # Automatically link the device to the logged-in user
+        serializer.save(user=self.request.user)
+
+
+

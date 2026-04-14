@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     'Camera',
     'Alarms',
     'api',
-    'rest_framework.authtoken'
+    'rest_framework.authtoken',
+    'channels'
 ]
 
 MIDDLEWARE = [
@@ -75,6 +76,13 @@ TEMPLATES = [
     },
 ]
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    },
+}
+
+ASGI_APPLICATION = 'CareConnect.asgi.application' #for channels
 WSGI_APPLICATION = 'CareConnect.wsgi.application'
 
 
