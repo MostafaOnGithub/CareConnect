@@ -11,8 +11,10 @@ from django.contrib.auth import authenticate
 from Tracking.serializers import RoutePointSerializer
 from Devices.models import Device,UserDeviceLink
 from Tracking.models import DeviceLocationLog
-from Devices.serializers import UserDeviceLinkSerializer
+from Devices.serializers import UserDeviceLinkSerializer,SosEvent,SosEventSerializer
 from rest_framework.authentication import TokenAuthentication
+from Biometrics.serializers import BiometricReading,BiometricReadingSerializer
+
 
 @api_view(['POST'])
 def registerUser(request):
@@ -84,15 +86,28 @@ def deviceLiveLocation(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def SoSHistory(request):
+    # 1. Find the active device link
     link = UserDeviceLink.objects.filter(
-        user = request.user,
-        is_active = True
+        user=request.user,
+        is_active=True
     ).select_related("device").first()
 
+    # Path A: No link found (Returns a Response - Good)
     if not link:
-        return Response({"error":"There is no device connected"}, status=status.HTTP_404_NOT_FOUND)
+        return Response({"error": "There is no device connected"}, status=status.HTTP_404_NOT_FOUND)
     
+    # 2. Get the device from the link
     device = link.device
+    
+    # 3. Fetch the SOS events for this specific device
+    # We use your SOSEvent model we discussed earlier
+    events = SosEvent.objects.filter(device=device).order_by('-time_stamp')
+    
+    # 4. Serialize the data
+    serializer = SosEventSerializer(events, many=True)
+
+    # Path B: Link found (NOW Returns a Response - Fixed!)
+    return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class UserDeviceLinkViewSet(viewsets.ModelViewSet):
@@ -110,4 +125,18 @@ class UserDeviceLinkViewSet(viewsets.ModelViewSet):
         serializer.save(user=self.request.user)
 
 
+class BiometricReadingViewSet(viewsets.ModelViewSet):
+    serializer_class = BiometricReadingSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
+    def get_queryset(self):
+        """
+        Only return readings for the device currently 
+        linked and active for the logged-in user.
+        """
+        user = self.request.user
+        active_link = UserDeviceLink.objects.filter(user=user, is_active=True).first()
+        
+        if active_link:
+            return BiometricReading.objects.filter(device=active_link.device)
+        return BiometricReading.objects.none()
