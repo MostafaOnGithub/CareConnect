@@ -9,8 +9,14 @@ class Device(models.Model):
     def __str__(self):
         return self.serial_number
     
+sos_classes = [
+    ("button","Button"),("mpu","Mpu"),
+    ("geofencing","Geofencing"),
+    ("Dangerzone","dangerzone"),
+    ("heart_rate","Heart_rate")]
 class SosEvent(models.Model):
     device = models.ForeignKey(Device,on_delete=models.CASCADE,related_name='sos_event')
+    sos_types = models.CharField(max_length=20,choices=sos_classes,default="button")
     time_stamp = models.DateTimeField(auto_now_add=True)
     
 
@@ -21,7 +27,7 @@ class UserDeviceLink(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
     device = models.ForeignKey(Device, on_delete=models.CASCADE, null=True, blank=True)
     is_active = models.BooleanField(default=True)
-    role = models.CharField(max_length=50)
+    role = models.CharField(max_length=50,null=True)
 
     def save(self, *args, **kwargs):
         # If this instance is being saved as active

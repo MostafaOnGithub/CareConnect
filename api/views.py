@@ -110,19 +110,46 @@ def SoSHistory(request):
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+from rest_framework import viewsets, permissions, status
+from rest_framework.response import Response
+from rest_framework.authentication import TokenAuthentication
+
 class UserDeviceLinkViewSet(viewsets.ModelViewSet):
     serializer_class = UserDeviceLinkSerializer
-
     authentication_classes = [TokenAuthentication] 
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # A user should only see their own device links
+        # Security: A user should only see/modify their own device links
         return UserDeviceLink.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        # Automatically link the device to the logged-in user
+        # When creating, ensure this is the only active link if is_active=True
+        if serializer.validated_data.get('is_active'):
+            UserDeviceLink.objects.filter(user=self.request.user).update(is_active=False)
         serializer.save(user=self.request.user)
+
+    def perform_update(self, serializer):
+        # Logic: If the user is setting THIS device to active, 
+        # deactivate all their other devices first.
+        if serializer.validated_data.get('is_active'):
+            UserDeviceLink.objects.filter(user=self.request.user).exclude(
+                pk=serializer.instance.pk
+            ).update(is_active=False)
+        serializer.save()
+
+    def destroy(self, request, *args, **kwargs):
+        # Custom delete logic: Check if we are deleting the active device
+        instance = self.get_object()
+        
+        # Example: You might want to prevent deleting the link if it's the only one
+        # or simply perform the standard delete.
+        self.perform_destroy(instance)
+        return Response(
+            {"message": "Device unlinked successfully."}, 
+            status=status.HTTP_204_NO_CONTENT
+        )
+    
 
 
 class BiometricReadingViewSet(viewsets.ModelViewSet):
